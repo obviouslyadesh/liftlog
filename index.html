@@ -78,6 +78,7 @@
     margin-bottom: 28px;
     border-bottom: 1px solid var(--border);
     padding-bottom: 0;
+    flex-wrap: wrap;
   }
 
   .tab {
@@ -437,12 +438,80 @@
     text-align: center;
   }
 
+  /* ── Calculator Results ── */
+  .calc-result {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 16px;
+  }
+
+  .calc-result-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent);
+    font-family: var(--mono);
+    margin-bottom: 6px;
+  }
+
+  .calc-result-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 12px;
+  }
+
+  .calc-result-category {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    padding: 8px 12px;
+    background: var(--surface);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    display: inline-block;
+  }
+
+  .calc-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+  }
+
+  .calc-tab {
+    font-family: var(--display);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 10px 14px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    position: relative;
+    bottom: -1px;
+    letter-spacing: 0.03em;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s;
+  }
+
+  .calc-tab:hover { color: var(--text); }
+  .calc-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .calc-section { display: none; }
+  .calc-section.active { display: block; }
+
   @media (max-width: 520px) {
     .set-row { grid-template-columns: 28px 1fr 1fr auto; }
     .set-row .rpe-col { display: none; }
     .set-col-headers { grid-template-columns: 28px 1fr 1fr auto; }
     .set-col-headers .rpe-hdr { display: none; }
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .tabs { flex-wrap: wrap; }
   }
 </style>
 </head>
@@ -461,6 +530,7 @@
     <button class="tab active" onclick="showTab('log')">Log</button>
     <button class="tab" onclick="showTab('history')">History</button>
     <button class="tab" onclick="showTab('progress')">Progress</button>
+    <button class="tab" onclick="showTab('tools')">Tools</button>
     <button class="tab" onclick="showTab('export')">Export</button>
   </div>
 
@@ -509,6 +579,56 @@
         </select>
       </div>
       <div id="progress-content"></div>
+    </div>
+  </div>
+
+  <!-- TOOLS TAB -->
+  <div id="tools" class="section">
+    <div class="card">
+      <div class="card-label">Body Composition Tools</div>
+      
+      <div class="calc-tabs">
+        <button class="calc-tab active" onclick="showCalcTab('bmi')">BMI Calculator</button>
+        <button class="calc-tab" onclick="showCalcTab('ffmi')">FFMI Calculator</button>
+      </div>
+
+      <!-- BMI Calculator -->
+      <div id="bmi" class="calc-section active">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Calculate your Body Mass Index (BMI). BMI is a simple screening tool for weight categories.</p>
+        <div class="form-row">
+          <div class="field">
+            <label>Weight (kg)</label>
+            <input type="number" id="bmi-weight" placeholder="70" min="0" step="0.1" oninput="calculateBMI()" />
+          </div>
+          <div class="field">
+            <label>Height (cm)</label>
+            <input type="number" id="bmi-height" placeholder="175" min="0" step="0.1" oninput="calculateBMI()" />
+          </div>
+        </div>
+        <div id="bmi-result"></div>
+      </div>
+
+      <!-- FFMI Calculator -->
+      <div id="ffmi" class="calc-section">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Calculate your Fat Free Mass Index (FFMI). FFMI measures lean muscle mass relative to height, useful for tracking muscle gain.</p>
+        <div class="form-row">
+          <div class="field">
+            <label>Weight (kg)</label>
+            <input type="number" id="ffmi-weight" placeholder="70" min="0" step="0.1" oninput="calculateFFMI()" />
+          </div>
+          <div class="field">
+            <label>Height (cm)</label>
+            <input type="number" id="ffmi-height" placeholder="175" min="0" step="0.1" oninput="calculateFFMI()" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label>Body Fat %</label>
+            <input type="number" id="ffmi-bodyfat" placeholder="15" min="0" max="100" step="0.1" oninput="calculateFFMI()" />
+          </div>
+        </div>
+        <div id="ffmi-result"></div>
+      </div>
     </div>
   </div>
 
@@ -577,12 +697,21 @@ function updateHeader() {
 
 // ── Tab ──
 function showTab(t) {
-  ['log','history','progress','export'].forEach((id, i) => {
+  ['log','history','progress','tools','export'].forEach((id, i) => {
     document.getElementById(id).classList.toggle('active', id === t);
-    document.querySelectorAll('.tab')[i].classList.toggle('active', ['log','history','progress','export'][i] === t);
+    document.querySelectorAll('.tab')[i].classList.toggle('active', ['log','history','progress','tools','export'][i] === t);
   });
   if (t === 'history') renderHistory();
   if (t === 'progress') renderProgressSelect();
+}
+
+function showCalcTab(t) {
+  ['bmi','ffmi'].forEach(id => {
+    document.getElementById(id).classList.toggle('active', id === t);
+  });
+  document.querySelectorAll('.calc-tab').forEach((btn, i) => {
+    btn.classList.toggle('active', ['bmi','ffmi'][i] === t);
+  });
 }
 
 // ── Log ──
@@ -776,6 +905,69 @@ function renderProgress() {
         <div style="font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:4px;">${setsStr}</div>
       </div>`;
     }).join('')}
+  `;
+}
+
+// ── Tools: BMI Calculator ──
+function calculateBMI() {
+  const weight = parseFloat(document.getElementById('bmi-weight').value);
+  const height = parseFloat(document.getElementById('bmi-height').value);
+  const resultEl = document.getElementById('bmi-result');
+
+  if (!weight || !height || weight <= 0 || height <= 0) {
+    resultEl.innerHTML = '';
+    return;
+  }
+
+  const heightM = height / 100;
+  const bmi = weight / (heightM * heightM);
+
+  let category = '';
+  let categoryColor = 'var(--text)';
+  if (bmi < 18.5) {
+    category = 'Underweight';
+  } else if (bmi < 25) {
+    category = 'Normal weight';
+  } else if (bmi < 30) {
+    category = 'Overweight';
+  } else {
+    category = 'Obese';
+  }
+
+  resultEl.innerHTML = `
+    <div class="calc-result">
+      <div class="calc-result-label">Your BMI</div>
+      <div class="calc-result-value">${bmi.toFixed(1)}</div>
+      <div class="calc-result-category">${category}</div>
+    </div>
+  `;
+}
+
+// ── Tools: FFMI Calculator ──
+function calculateFFMI() {
+  const weight = parseFloat(document.getElementById('ffmi-weight').value);
+  const height = parseFloat(document.getElementById('ffmi-height').value);
+  const bodyfat = parseFloat(document.getElementById('ffmi-bodyfat').value);
+  const resultEl = document.getElementById('ffmi-result');
+
+  if (!weight || !height || bodyfat === '' || weight <= 0 || height <= 0 || bodyfat < 0 || bodyfat > 100) {
+    resultEl.innerHTML = '';
+    return;
+  }
+
+  const heightM = height / 100;
+  const leanMass = weight * (1 - bodyfat / 100);
+  const ffmi = leanMass / (heightM * heightM);
+
+  resultEl.innerHTML = `
+    <div class="calc-result">
+      <div class="calc-result-label">Your FFMI</div>
+      <div class="calc-result-value">${ffmi.toFixed(1)}</div>
+      <div style="font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:10px;">
+        <div>Lean mass: <strong>${leanMass.toFixed(1)}kg</strong></div>
+        <div style="margin-top:4px;">Body fat: <strong>${bodyfat.toFixed(1)}%</strong></div>
+      </div>
+    </div>
   `;
 }
 
